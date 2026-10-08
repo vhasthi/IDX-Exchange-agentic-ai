@@ -1,5 +1,9 @@
 // Turns parsed filters into a parameterized query against rets_property.
 // Values are always passed as ? parameters, never concatenated into the SQL string.
+//
+// The handbook lists "True" for PoolPrivateYN / ViewYN, but the imported data stores
+// yes as "1" (otherwise "" or NULL), so those flags are matched against "1".
+const DB_YES = "1";
 
 import type { Pool } from "mysql2/promise";
 import type { PropertyFilters } from "./parsePropertyQuery.js";
@@ -17,7 +21,7 @@ export function buildPropertySql(filters: PropertyFilters, limit = 20) {
     params.push(filters.maxPrice);
   }
   if (filters.beds !== null) {
-    where.push("CAST(L_Keyword2 AS DECIMAL(10,2)) >= ?");
+    where.push("L_Keyword2 >= ?");
     params.push(filters.beds);
   }
   if (filters.baths !== null) {
@@ -34,11 +38,11 @@ export function buildPropertySql(filters: PropertyFilters, limit = 20) {
   }
   if (filters.pool) {
     where.push("PoolPrivateYN = ?");
-    params.push(filters.pool);
+    params.push(DB_YES);
   }
   if (filters.hasView) {
     where.push("ViewYN = ?");
-    params.push(filters.hasView);
+    params.push(DB_YES);
   }
 
   const sql =

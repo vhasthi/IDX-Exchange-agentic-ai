@@ -36,3 +36,8 @@ test("SQL uses parameters, not inlined values", () => {
   assert.ok(!sql.includes("Irvine"));
   assert.deepEqual(params, ["Irvine", 1_000_000, "Condominium"]);
 });
+
+test("pool and view match the data's \"1\" flag, not \"True\"", () => {
+  const { params } = buildPropertySql(parsePropertyQuery("homes with a pool and a view"));
+  assert.deepEqual(params, ["1", "1"]);
+});
