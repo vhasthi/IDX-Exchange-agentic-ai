@@ -1,0 +1,17 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# MLS data dumps (confidential, and too large for GitHub)
+*.sql
+data/
+
+# Dependencies and build output
+node_modules/
+dist/
+
+# OS / editor
+.DS_Store
+.vscode/
+*.log
