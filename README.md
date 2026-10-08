@@ -17,7 +17,7 @@ AI Agentic Engineer Intern project (Summer 2026): a natural-language property se
 Search from the terminal:
 
 ```bash
-npm run search -- "3-bedroom condos in Irvine under $1.5M with a pool"
+npm run search -- '3-bedroom condos in Irvine under $1.5M with a pool'
 ```
 
 Run tests and the type check:
