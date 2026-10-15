@@ -34,10 +34,16 @@ test("query with no filters", () => {
 test("SQL uses parameters, not inlined values", () => {
   const { sql, params } = buildPropertySql(parsePropertyQuery("condos in Irvine under $1M"));
   assert.ok(!sql.includes("Irvine"));
-  assert.deepEqual(params, ["Irvine", 1_000_000, "Condominium"]);
+  assert.deepEqual(params, ["Active", "Irvine", 1_000_000, "Condominium"]);
 });
 
 test("pool and view match the data's \"1\" flag, not \"True\"", () => {
   const { params } = buildPropertySql(parsePropertyQuery("homes with a pool and a view"));
-  assert.deepEqual(params, ["1", "1"]);
+  assert.deepEqual(params, ["Active", "1", "1"]);
+});
+
+test("city stops before sold-comps wording", () => {
+  assert.equal(parsePropertyQuery("what did homes in Irvine sell for in the last 6 months").city, "Irvine");
+  assert.equal(parsePropertyQuery("condos in Newport Beach sold last year").city, "Newport Beach");
+  assert.equal(parsePropertyQuery("homes in Irvine that have a pool").city, "Irvine");
 });

@@ -23,7 +23,11 @@ const TYPE_MAP: Record<string, string> = {
 
 export function parsePropertyQuery(query: string): PropertyFilters {
   // The handbook PDF wraps this regex across two lines; it must be a single line.
-  const cityMatch = query.match(/\bin ([A-Za-z\s]+?)(?:\s+under|\s+with|\s+at|\s+for|[,.?!]|$)/i);
+  // Week 3: also stop at words that follow the city in sold-comps questions
+  // ("homes in Irvine sold in the last 6 months"), so the city isn't "Irvine sold".
+  const cityMatch = query.match(
+    /\bin ([A-Za-z\s]+?)(?:\s+(?:under|with|at|for|sold|sell|selling|went|in|over|during|last|past|that)\b|[,.?!]|$)/i,
+  );
   const priceMatch = query.match(/under \$?([\d,.]+)\s*(k|m)?/i);
   const bedsMatch = query.match(/(\d+)[\s-]*(bed|beds|bedroom|bedrooms|br)\b/i);
   const bathsMatch = query.match(/(\d+(?:\.5)?)[\s-]*(bath|baths|bathroom|bathrooms|ba)\b/i);
