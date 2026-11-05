@@ -45,7 +45,7 @@ export interface SearchOptions {
   page?: number; // 1-based page number, if not using the cursor
 }
 
-const COLUMNS =
+export const COLUMNS =
   "L_ListingID, L_DisplayId, L_Address, L_City, L_Zip, " +
   "L_SystemPrice AS price, L_Keyword2 AS beds, LM_Dec_3 AS baths, " +
   "LM_Int2_3 AS sqft, L_Type_ AS type, L_Status AS status, " +
@@ -63,13 +63,11 @@ function wholeNumber(value: unknown, name: string, min: number, max: number, fal
   return n;
 }
 
-export function buildPropertySql(filters: PropertyFilters, options: SearchOptions = {}) {
-  const sort = options.sort ?? "price_asc";
-  if (!Object.hasOwn(SORTS, sort)) throw new Error(`Unknown sort: ${sort}`);
-  const order = SORTS[sort];
-  const limit = wholeNumber(options.limit, "limit", 1, MAX_PAGE_SIZE, 10);
-  const page = wholeNumber(options.page, "page", 1, MAX_OFFSET_PAGE, 1);
-
+/**
+ * WHERE conditions for active listings matching the filters, as bound parameters.
+ * Shared by the keyword search and the Week 6 semantic search.
+ */
+export function buildFilterWhere(filters: PropertyFilters) {
   // Only active listings. Bound as a parameter: a double-quoted "Active" in the
   // SQL text is read as a column name when MySQL runs with ANSI_QUOTES.
   const where: string[] = ["L_Status = ?"];
@@ -107,6 +105,18 @@ export function buildPropertySql(filters: PropertyFilters, options: SearchOption
     where.push("ViewYN = ?");
     params.push(DB_YES);
   }
+
+  return { where, params };
+}
+
+export function buildPropertySql(filters: PropertyFilters, options: SearchOptions = {}) {
+  const sort = options.sort ?? "price_asc";
+  if (!Object.hasOwn(SORTS, sort)) throw new Error(`Unknown sort: ${sort}`);
+  const order = SORTS[sort];
+  const limit = wholeNumber(options.limit, "limit", 1, MAX_PAGE_SIZE, 10);
+  const page = wholeNumber(options.page, "page", 1, MAX_OFFSET_PAGE, 1);
+
+  const { where, params } = buildFilterWhere(filters);
 
   // Rows without a sort value can't be paged by keyset, so leave them out.
   where.push(`${order.column} IS NOT NULL`);

@@ -2,17 +2,20 @@
   "name": "idx-exchange-agent",
   "version": "0.1.0",
   "private": true,
-  "description": "IDX Exchange AI agent: natural-language property search and market statistics over MLS data, served through OpenClaw.",
+  "description": "IDX Exchange AI agent: natural-language and semantic property search plus market statistics over MLS data, served through OpenClaw.",
   "type": "module",
   "scripts": {
     "search": "tsx src/cli.ts",
     "market": "tsx src/marketCli.ts",
+    "semantic": "tsx src/semanticCli.ts",
+    "embed": "tsx src/embedCli.ts",
     "test": "tsx --test test/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "dotenv": "^18.0.6",
-    "mysql2": "^3.24.5"
+    "mysql2": "^3.24.5",
+    "openai": "^7.31.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",

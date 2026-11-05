@@ -1,6 +1,6 @@
 # IDX Exchange Agent
 
-AI Agentic Engineer Intern project (Summer 2026): a natural-language property search and market statistics agent over MLS data, served through OpenClaw.
+AI Agentic Engineer Intern project (Summer 2026): a natural-language and semantic property search and market statistics agent over MLS data, served through OpenClaw.
 
 ## Setup
 
@@ -32,6 +32,15 @@ npm run market -- 'median condo prices in Irvine by zip over the last 6 months'
 npm run market -- --json --city Pasadena --group-by type
 ```
 
+Semantic search (Week 6). Add `OPENAI_API_KEY` to `.env`, embed the listings once, then search by meaning:
+
+```bash
+npm run embed -- --limit 200        # try it on 200 listings first
+npm run embed                       # all active listings (re-runs only embed new/changed ones)
+npm run semantic -- 'charming craftsman with mountain views and character'
+npm run semantic -- --top 10 'bright modern home with an open floor plan in Irvine under $2M'
+```
+
 Search flags: `--json`, `--sold` / `--active` / `--both`, `--sort price_asc|price_desc|newest|sqft_desc`,
 `--limit 1-50`, `--page N`, `--cursor TOKEN`, `--months 1-60`, `--sql`.
 
@@ -55,12 +64,17 @@ npm run typecheck
 | `src/skills/marketStats/marketSql.ts` | Week 5: parameterized market SQL (grouped averages, price lists for medians, active inventory) |
 | `src/skills/marketStats/stats.ts` | Week 5: medians, MoM / YoY trends, months of supply, buyer's / seller's market read |
 | `src/skills/marketStats/index.ts` | Week 5: skill entry point; question → scope → stats → markdown answer |
+| `src/skills/semanticSearch/embeddings.ts` | Week 6: listing text, OpenAI embeddings (batched), float32 storage, cosine similarity |
+| `src/skills/semanticSearch/store.ts` | Week 6: `listing_embeddings` table and incremental indexing of active listings |
+| `src/skills/semanticSearch/index.ts` | Week 6: hybrid search: structured filters, then ranking by cosine similarity |
 | `skills/mls-search/SKILL.md` | OpenClaw skill: property search |
 | `skills/market-stats/SKILL.md` | OpenClaw skill: market statistics |
+| `skills/semantic-search/SKILL.md` | OpenClaw skill: semantic search |
 | `src/tools/getCurrentTime.ts` | Handbook basic tool example |
 | `src/db.ts` | MySQL connection pool from `.env` |
 | `src/cli.ts` | Command-line entry point for trying searches |
 | `src/marketCli.ts` | Command-line entry point for market questions |
+| `src/embedCli.ts`, `src/semanticCli.ts` | Command-line entry points for embedding listings and semantic search |
 
 ## Filter → column mapping
 
@@ -115,3 +129,22 @@ The agent then runs `npm run search -- --json "<question>"` for home searches an
 - Market read: under 3 months of supply = seller's market, over 6 = buyer's market, adjusted by list-to-close and the
   recent price and days-on-market trend. Without inventory data it only calls clear trends. It is informational, not advice.
 - Recommended index (ask before adding): `CREATE INDEX idx_sold_city_zip_date ON california_sold (City, PostalCode, CloseDate);`
+
+## Week 6 notes: Semantic search with embeddings
+
+- Each active listing is turned into the handbook's text (type, city, beds, baths, sq ft, year, price, then `L_Remarks`)
+  and embedded with `text-embedding-3-small`. Missing fields are skipped instead of printing `null` (the handbook's
+  `f"{price:,}"` fails on a NULL price).
+- Embeddings are stored once in a `listing_embeddings` table (`npm run embed` creates it) as float32 BLOBs, 6 KB per
+  listing. Each row keeps a SHA-256 of the text, so re-running `npm run embed` only pays for new or changed listings.
+  Requests are batched 100 texts at a time.
+- Search is hybrid: hard facts in the query (city, max price, beds, baths, sq ft, type, pool, view) go through the same
+  parser and parameterized `WHERE` as the keyword search, then the remaining listings are ranked by cosine similarity
+  to the embedded query. Only the top results' full rows are loaded.
+- Cosine similarity is computed in TypeScript with normalized vectors (one dot product per listing), instead of the
+  handbook's per-row `sklearn` call, which is slow over thousands of listings.
+- Cost: about $0.02 per million tokens; a listing is roughly 150–300 tokens, so embedding 10,000 listings costs
+  around $0.05. Each search embeds only the query.
+- Scores are only meaningful relative to each other within one search; OpenAI similarities for related text are
+  often in the 0.3–0.6 range.
+- `OPENAI_API_KEY` lives in `.env` (git-ignored). Never commit it.
